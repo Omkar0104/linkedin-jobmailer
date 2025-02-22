@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn JobMailer 🚀</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f7fc;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .container {
+      /* max-width: 600px; */
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 18px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):hover {
+      opacity: 0.8;
+    }
+
+    #startScraping { background: #007bff; color: white; }
+    #deduplicate { background: #17a2b8; color: white; }
+    #extractDetails { background: #ffc107; color: black; }
+    #sendEmails { background: #28a745; color: white; }
+    #saveExtractedData { background: #6c757d; color: white; }
+
+    #log {
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 15px;
+      height: 300px;
+      overflow-y: auto;
+      border-radius: 5px;
+      text-align: left;
+      box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .log-message {
+      padding: 5px 0;
+    }
+
+    .info { color: #007bff; }
+    .success { color: #28a745; }
+    .error { color: #dc3545; }
+    .warning { color: #ffc107; }
+  </style>
+</head>
+<body>
+  <h1>📩 LinkedIn JobMailer</h1>
+  <div class="container">
+    <div class="button-group">
+      <button id="startScraping">🚀 Start Scraping</button>
+      <button id="deduplicate" >🧹 Remove Duplicates</button>
+      <button id="extractDetails" >🤖 Extract Company & HR Details</button>
+      <button id="sendEmails" >📩 Send Emails</button>
+      <button id="saveExtractedData" >💾 Save Extracted Data</button>
+    </div>
+
+    <h3>📊 Progress Log:</h3>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    const socket = io();
+    const logDiv = document.getElementById('log');
+    const startButton = document.getElementById('startScraping');
+    const dedupButton = document.getElementById('deduplicate');
+    const extractButton = document.getElementById('extractDetails');
+    const sendButton = document.getElementById('sendEmails');
+    const saveExtractedButton = document.getElementById('saveExtractedData');
+
+    const appendLog = (message, type = 'info') => {
+      const p = document.createElement('p');
+      p.className = `log-message ${type}`;
+      p.innerHTML = message;
+      logDiv.appendChild(p);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    };
+
+    socket.on('scrape-progress', (msg) => appendLog(`🔄 ${msg}`, 'info'));
+    socket.on('scrape-complete', (msg) => {
+      appendLog(`✅ ${msg}`, 'success');
+      dedupButton.disabled = false;
+    });
+    socket.on('scrape-error', (msg) => appendLog(`❌ ${msg}`, 'error'));
+
+    socket.on('extract-progress', (msg) => appendLog(`${msg}`, 'info'));
+    socket.on('extract-complete', (msg) => {
+      appendLog(`✅ ${msg}`, 'success');
+      saveExtractedButton.disabled = false;
+    });
+    socket.on('extract-error', (msg) => appendLog(`❗ ${msg}`, 'error'));
+
+    socket.on('email-progress', (msg) => appendLog(`✉️ ${msg}`, 'info'));
+    socket.on('email-error', (msg) => appendLog(`❗ ${msg}`, 'error'));
+
+    startButton.addEventListener('click', () => {
+      appendLog('🚀 AI Agent activated: Starting the scraper... 🤖', 'info');
+      fetch('/scrape', { method: 'POST' })
+        .then(res => res.text())
+        .then(data => appendLog(`ℹ️ ${data}`, 'success'))
+        .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
+    });
+
+    dedupButton.addEventListener('click', () => {
+      appendLog('🧹 Cleaning up duplicate entries...', 'warning');
+      fetch('/deduplicate', { method: 'POST' })
+        .then(res => res.text())
+        .then(data => {
+          appendLog(`✅ ${data}`, 'success');
+          extractButton.disabled = false;
+        })
+        .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
+    });
+
+    extractButton.addEventListener('click', () => {
+      appendLog('🤖 AI scanning for recruiter & company details...', 'info');
+      fetch('/extract', { method: 'POST' })
+        .then(res => res.text())
+        .then(data => {
+          appendLog(`✅ ${data}`, 'success');
+          sendButton.disabled = false;
+          saveExtractedButton.disabled = false;
+        })
+        .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
+    });
+
+    sendButton.addEventListener('click', () => {
+      appendLog('📩 Dispatching personalized emails...', 'info');
+      fetch('/send-emails', { method: 'POST' })
+        .then(res => res.text())
+        .then(data => appendLog(`✅ ${data}`, 'success'))
+        .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
+    });
+
+    saveExtractedButton.addEventListener('click', () => {
+      appendLog('💾 Saving extracted data for future use...', 'info');
+      fetch('/save-extracted-data', { method: 'POST' })
+        .then(res => res.text())
+        .then(data => appendLog(`${data}`, 'success'))
+        .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
+    });
+  </script>
+</body>
+</html>
