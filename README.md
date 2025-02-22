@@ -47,7 +47,7 @@ LINKEDIN_EMAIL=your_linkedin_email
 LINKEDIN_PASSWORD=your_linkedin_password
 ROLE=Node.js Developer
 ```
-#### ⚠️ Note: OpenAI no longer offers a free tier. To get your OpenAI API Key, check out this [portfolio](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
+#### ⚠️ Note: OpenAI no longer offers a free tier. To get your free OpenAI API Key, check out this [Video](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
 
 4. Email Template:
 Place your HTML email template in
