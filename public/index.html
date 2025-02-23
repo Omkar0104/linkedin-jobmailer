@@ -18,7 +18,6 @@
     }
 
     .container {
-      /* max-width: 600px; */
       margin: auto;
       background: #fff;
       padding: 20px;
@@ -35,8 +34,8 @@
     }
 
     button {
-      padding: 12px 18px;
-      font-size: 16px;
+      padding:8px 12px;
+      font-size: 14px;
       font-weight: bold;
       border: none;
       border-radius: 5px;
@@ -58,6 +57,7 @@
     #extractDetails { background: #ffc107; color: black; }
     #sendEmails { background: #28a745; color: white; }
     #saveExtractedData { background: #6c757d; color: white; }
+    #deleteDuplicates { background: #dc3545; color: white; }
 
     #log {
       border: 1px solid #ccc;
@@ -85,10 +85,11 @@
   <div class="container">
     <div class="button-group">
       <button id="startScraping">🚀 Start Scraping</button>
-      <button id="deduplicate" disabled>🧹 Remove Duplicates</button>
-      <button id="extractDetails" disabled="" >🤖 Extract Company & HR Details</button>
-      <button id="sendEmails" disabled>📩 Send Emails</button>
-      <button id="saveExtractedData" disabled>💾 Save Extracted Data</button>
+      <button id="deduplicate" >🧹 Remove Duplicates</button>
+      <button id="deleteDuplicates">🗑️ Clean With Backups </button>
+      <button id="extractDetails" >🤖 Extract Company & HR Details</button>
+      <button id="sendEmails" >📩 Send Emails</button>
+      <button id="saveExtractedData" >💾 Save Extracted Data</button>
     </div>
 
     <h3>📊 Progress Log:</h3>
@@ -103,6 +104,7 @@
     const extractButton = document.getElementById('extractDetails');
     const sendButton = document.getElementById('sendEmails');
     const saveExtractedButton = document.getElementById('saveExtractedData');
+    const deleteDuplicatesButton = document.getElementById('deleteDuplicates');
 
     const appendLog = (message, type = 'info') => {
       const p = document.createElement('p');
@@ -128,6 +130,11 @@
 
     socket.on('email-progress', (msg) => appendLog(`✉️ ${msg}`, 'info'));
     socket.on('email-error', (msg) => appendLog(`❗ ${msg}`, 'error'));
+
+    // socket.on('deletion_started', (msg) => appendLog(`✉️ ${msg}`, 'info'));
+    socket.on('deletion_error', (msg) => appendLog(`✉️ ${msg}`, 'error'));
+    socket.on('deletion_progress', (msg) => appendLog(`✉️ ${msg}`, 'info'));
+
 
     startButton.addEventListener('click', () => {
       appendLog('🚀 AI Agent activated: Starting the scraper... 🤖', 'info');
@@ -173,6 +180,14 @@
       fetch('/save-extracted-data', { method: 'POST' })
         .then(res => res.text())
         .then(data => appendLog(`${data}`, 'success'))
+        .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
+    });
+
+    deleteDuplicatesButton.addEventListener('click', () => {
+      appendLog('🗑️ Deleting duplicate records...', 'warning');
+      fetch('/delete-duplicates', { method: 'POST' })
+        .then(res => res.text())
+        .then(data => appendLog(`✅ ${data}`, 'success'))
         .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
     });
   </script>

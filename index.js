@@ -7,6 +7,7 @@ const socketIo = require('socket.io');
 const bodyParser = require('body-parser');
 const scraperService = require('./services/scraperService');
 const dedupService = require('./services/dedupService');
+const { deleteDuplicates } = require('./services/deleteDuplicates');
 const { extractService } = require('./services/extractService');
 const emailService = require('./services/emailService');
 const fs = require('fs');
@@ -58,7 +59,7 @@ app.post('/deduplicate', async (req, res) => {
 const data = JSON.parse(rawData);
     const { uniqueData, duplicatesCount } = await dedupService.deduplicateJobs(data);
 
-    fs.writeFileSync('extracted_data.json', JSON.stringify(uniqueData, null, 2));
+    fs.writeFileSync('linkedin_hiring_posts.json', JSON.stringify(uniqueData, null, 2));
 
     res.status(200).send(`Number of deleted entries: ${duplicatesCount}`);
   } catch (err) {
@@ -92,7 +93,7 @@ app.post('/send-emails', async (req, res) => {
 
 // Save extracted data to a new file
 app.post('/save-extracted-data', (req, res) => {
-  const sourceFile = 'extracted_data.json';
+  const sourceFile = 'linkedin_hiring_posts.json';
 
   if (!fs.existsSync(sourceFile)) {
     return res.status(404).send('No extracted data found.');
@@ -113,16 +114,9 @@ app.post('/save-extracted-data', (req, res) => {
   });
 });
 
-// Fetch all recipients
-app.get('/recipients', async (req, res) => {
-  try {
-    const recipients = await extractService.getAllRecipients();
-    res.status(200).json(recipients);
-  } catch (err) {
-    console.error('Fetching recipients error:', err);
-    res.status(500).send('Error fetching recipients');
-  }
+app.post('/delete-duplicates', (req, res) => {
+  deleteDuplicates(req, res, io);
 });
-
+ 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
