@@ -20,7 +20,7 @@ Automates the process of scraping LinkedIn for job postings and sending personal
 
 - npm
 
-- Gmail account for sending emails (App Password recommended)
+- Gmail account for sending emails (App Password recommended) [How to Generate App Password in Google](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
 
 ## Installation
 
@@ -45,6 +45,7 @@ OPENAI_API_KEY=your-openai-api-key
 SEARCH_KEYWORD=node.js developer
 LINKEDIN_EMAIL=your_linkedin_email
 LINKEDIN_PASSWORD=your_linkedin_password
+SCROLL_LIMIT=5
 ROLE=Node.js Developer
 ```
 #### ⚠️ Note: OpenAI no longer offers a free tier. To get your free OpenAI API Key, check out this [Video](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
@@ -66,6 +67,8 @@ node index.js
 ## Usage
 
 The scraper extracts job posts based on SEARCH_KEYWORD.
+
+The scrolling depth is controlled by SCROLL_LIMIT.
 
 Sends personalized emails using the template with recruiter and company names.
 

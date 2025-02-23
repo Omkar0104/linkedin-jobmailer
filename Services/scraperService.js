@@ -40,7 +40,7 @@ const scrape = async (io) => {
 
     // Scroll and load more posts
     let previousHeight;
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < process.env.SCROLL_LIMIT; i++) {
       previousHeight = await page.evaluate(() => document.body.scrollHeight);
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       const randomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
