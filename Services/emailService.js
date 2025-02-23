@@ -24,7 +24,7 @@ const loadEmailTemplate = (templatePath, variables) => {
 };
 
 const sendEmails = async (io) => {
-  const rawData = fs.readFileSync('extracted_data.json');
+  const rawData = fs.readFileSync('./data/linkedin_hiring_posts.json');
   const recipients = JSON.parse(rawData);
 
   const transporter = nodemailer.createTransport({

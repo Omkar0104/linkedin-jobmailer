@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const deleteDuplicates = async (req, res, io) => {
-  const sourceFile = 'linkedin_hiring_posts.json';
-  const directoryPath = path.resolve(__dirname, '..'); // Set directory to parent
+  const directoryPath = path.resolve(__dirname, '../data'); // Set directory to parent
+  const sourceFile = `${directoryPath}/linkedin_hiring_posts.json`;
 
   try {
     if (!fs.existsSync(sourceFile)) {

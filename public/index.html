@@ -33,8 +33,36 @@
       margin-bottom: 20px;
     }
 
+    .button-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tooltip {
+      visibility: hidden;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      padding: 5px 10px;
+      border-radius: 5px;
+      position: absolute;
+      top: -35px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .button-wrapper:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+
     button {
-      padding:8px 12px;
+      padding: 8px 12px;
       font-size: 14px;
       font-weight: bold;
       border: none;
@@ -51,13 +79,6 @@
     button:not(:disabled):hover {
       opacity: 0.8;
     }
-
-    #startScraping { background: #007bff; color: white; }
-    #deduplicate { background: #17a2b8; color: white; }
-    #extractDetails { background: #ffc107; color: black; }
-    #sendEmails { background: #28a745; color: white; }
-    #saveExtractedData { background: #6c757d; color: white; }
-    #deleteDuplicates { background: #dc3545; color: white; }
 
     #log {
       border: 1px solid #ccc;
@@ -84,12 +105,35 @@
   <h1>📩 LinkedIn JobMailer</h1>
   <div class="container">
     <div class="button-group">
-      <button id="startScraping">🚀 Start Scraping</button>
-      <button id="deduplicate" >🧹 Remove Duplicates</button>
-      <button id="deleteDuplicates">🗑️ Clean With Backups </button>
-      <button id="extractDetails" >🤖 Extract Company & HR Details</button>
-      <button id="sendEmails" >📩 Send Emails</button>
-      <button id="saveExtractedData" >💾 Save Extracted Data</button>
+      <div class="button-wrapper">
+        <div class="tooltip">Start scraping LinkedIn job data</div>
+        <button id="startScraping">🚀 Start Scraping</button>
+      </div>
+
+      <div class="button-wrapper">
+        <div class="tooltip">Remove duplicate job entries</div>
+        <button id="deduplicate" disabled>🧹 Remove Duplicates</button>
+      </div>
+
+      <div class="button-wrapper">
+        <div class="tooltip">🔄 Remove duplicates by cross-checking with backup files to avoid emailing the same person twice</div>
+        <button id="deleteDuplicates" disabled>🗑️ Clean With Backups</button>
+      </div>
+
+      <div class="button-wrapper">
+        <div class="tooltip">Extract company and HR contact details</div>
+        <button id="extractDetails" disabled>🤖 Extract Company & HR Details</button>
+      </div>
+
+      <div class="button-wrapper">
+        <div class="tooltip">Send emails to recruiters</div>
+        <button id="sendEmails" disabled>📩 Send Emails</button>
+      </div>
+
+      <div class="button-wrapper">
+        <div class="tooltip">Save extracted data for later use</div>
+        <button id="saveExtractedData" disabled>💾 Save Extracted Data</button>
+      </div>
     </div>
 
     <h3>📊 Progress Log:</h3>
@@ -131,10 +175,8 @@
     socket.on('email-progress', (msg) => appendLog(`✉️ ${msg}`, 'info'));
     socket.on('email-error', (msg) => appendLog(`❗ ${msg}`, 'error'));
 
-    // socket.on('deletion_started', (msg) => appendLog(`✉️ ${msg}`, 'info'));
-    socket.on('deletion_error', (msg) => appendLog(`✉️ ${msg}`, 'error'));
-    socket.on('deletion_progress', (msg) => appendLog(`✉️ ${msg}`, 'info'));
-
+    socket.on('deletion_error', (msg) => appendLog(`❗ ${msg}`, 'error'));
+    socket.on('deletion_progress', (msg) => appendLog(`🗑️ ${msg}`, 'info'));
 
     startButton.addEventListener('click', () => {
       appendLog('🚀 AI Agent activated: Starting the scraper... 🤖', 'info');

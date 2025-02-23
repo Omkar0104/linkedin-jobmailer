@@ -59,7 +59,8 @@ const extractService = async (io) => {
 
   try {
 
-    const jsonData = JSON.parse(fs.readFileSync('extracted_data.json', 'utf8'));
+    const jsonData = JSON.parse(fs.readFileSync('./data/linkedin_hiring_posts.json', 'utf8'));
+    console.log(jsonData.length);
     io.emit('extract-progress', `📤 AI Agent activated: Extracting details from ${jsonData.length} job posts... 🔍`);
 
     for (let i = 0; i < jsonData.length; i++) {
@@ -89,15 +90,15 @@ break;
       }
     }
 
-    fs.writeFileSync('extracted_data.json', JSON.stringify(extractedData, null, 2), 'utf8');
-    io.emit('extract-complete', '🎉 Extraction completed! Data saved to extracted_data.json. You can now review and update it as needed.');
+    fs.writeFileSync('./data/linkedin_hiring_posts.json', JSON.stringify(extractedData, null, 2), 'utf8');
+    io.emit('extract-complete', '🎉 Extraction completed! Data saved to linkedin_hiring_posts.json. You can now review and update it as needed.');
 
   } catch (error) {
     console.error("Extraction error:", error);
     io.emit('extract-error', `❗ Extraction failed: ${error.message}`);
 
     // Save partial data even on error
-    fs.writeFileSync('extracted_data.json', JSON.stringify(extractedData, null, 2), 'utf8');
+    fs.writeFileSync('./data/linkedin_hiring_posts.json', JSON.stringify(extractedData, null, 2), 'utf8');
     io.emit('extract-complete', '⚠️ Partial data saved due to an error.');
   }
 };

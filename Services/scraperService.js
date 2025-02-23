@@ -21,6 +21,13 @@ const scrape = async (io) => {
     await page.goto("https://www.linkedin.com/login", { waitUntil: "networkidle2" });
     await page.type("#username", process.env.LINKEDIN_EMAIL, { delay: 100 });
     await page.type("#password", process.env.LINKEDIN_PASSWORD, { delay: 100 });
+    await page.evaluate(() => {
+    const checkbox = document.querySelector('input[name="rememberMeOptIn"]');
+      if (checkbox && checkbox.checked) {
+        checkbox.click();
+      }
+    });
+    
     await page.click("[type='submit']");
     await page.waitForNavigation();
 
@@ -29,7 +36,6 @@ const scrape = async (io) => {
     const searchKeyword = process.env.SEARCH_KEYWORD;
 
     const encodedKeyword = encodeURIComponent(searchKeyword);
-
 
     // Search URL
     const searchURL = `https://www.linkedin.com/search/results/content/?keywords=${encodedKeyword}`;
@@ -40,7 +46,8 @@ const scrape = async (io) => {
 
     // Scroll and load more posts
     let previousHeight;
-    for (let i = 0; i < process.env.SCROLL_LIMIT; i++) {
+    for (let i = 0; i < process.env.SCROLL_LIMIT; i++) 
+      {
       previousHeight = await page.evaluate(() => document.body.scrollHeight);
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       const randomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -74,7 +81,7 @@ const scrape = async (io) => {
     io.emit('scrape-progress', `Extracted ${posts.length} posts.`);
 
     // Save data
-    fs.writeFileSync("linkedin_hiring_posts.json", JSON.stringify(posts, null, 2));
+    fs.writeFileSync("./data/linkedin_hiring_posts.json", JSON.stringify(posts, null, 2));
 
     io.emit('scrape-complete', 'Scraping completed and data saved.');
     await browser.close();

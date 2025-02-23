@@ -50,16 +50,16 @@ app.post('/scrape', async (req, res) => {
     console.error('Scraping error:', err);
     res.status(500).send('Error during scraping');
   }
-});
+}); 
 
 // Deduplicate data
 app.post('/deduplicate', async (req, res) => {
   try {
-    const rawData = fs.readFileSync('linkedin_hiring_posts.json');
+    const rawData = fs.readFileSync('./data/linkedin_hiring_posts.json');
 const data = JSON.parse(rawData);
     const { uniqueData, duplicatesCount } = await dedupService.deduplicateJobs(data);
 
-    fs.writeFileSync('linkedin_hiring_posts.json', JSON.stringify(uniqueData, null, 2));
+    fs.writeFileSync('./data/linkedin_hiring_posts.json', JSON.stringify(uniqueData, null, 2));
 
     res.status(200).send(`Number of deleted entries: ${duplicatesCount}`);
   } catch (err) {
@@ -93,14 +93,14 @@ app.post('/send-emails', async (req, res) => {
 
 // Save extracted data to a new file
 app.post('/save-extracted-data', (req, res) => {
-  const sourceFile = 'linkedin_hiring_posts.json';
+  const sourceFile = './data/linkedin_hiring_posts.json';
 
   if (!fs.existsSync(sourceFile)) {
     return res.status(404).send('No extracted data found.');
   }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const newFileName = `extracted_data_${timestamp}.json`;
+  const newFileName = `./data/extracted_data_${timestamp}.json`;
   const destination = path.join(__dirname, newFileName);
 
   fs.copyFile(sourceFile, destination, (err) => {
