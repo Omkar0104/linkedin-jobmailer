@@ -162,6 +162,7 @@
     socket.on('scrape-complete', (msg) => {
       appendLog(`✅ ${msg}`, 'success');
       dedupButton.disabled = false;
+      deleteDuplicatesButton.disabled = false;
     });
     socket.on('scrape-error', (msg) => appendLog(`❌ ${msg}`, 'error'));
 
@@ -169,6 +170,7 @@
     socket.on('extract-complete', (msg) => {
       appendLog(`✅ ${msg}`, 'success');
       saveExtractedButton.disabled = false;
+    
     });
     socket.on('extract-error', (msg) => appendLog(`❗ ${msg}`, 'error'));
 

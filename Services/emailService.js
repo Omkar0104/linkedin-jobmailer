@@ -14,7 +14,11 @@ const loadEmailTemplate = (templatePath, variables) => {
     //   template = template.replace(regex, variables[key]);
     // });
     template = template.replace(/\$\{name\}/g, variables.name);
+    if(variables.company == "" || variables.company == null || variables.company == undefined){
+      template = template.replace(/\$\{company\}/g, "your company");
+    } else{
     template = template.replace(/\$\{company\}/g, variables.company);
+    }
 
     return template;
   } catch (error) {
@@ -41,7 +45,7 @@ const sendEmails = async (io) => {
     // Variables to replace in the template
     const variables = {
       name: (recipient.recruiter == "HR Team"?recipient.recruiter:recipient.recruiter.split(" ")[0]) || 'Recruiter',
-      company: "at "+recipient.company || '',
+      company: recipient.company || 'your company',
     };
 
     const emailContent = loadEmailTemplate(templatePath, variables);
