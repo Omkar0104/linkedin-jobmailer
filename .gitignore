@@ -1,2 +1,4 @@
 node_modules/
 .env
+linkedin_hiring_posts.json
+data/
