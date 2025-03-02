@@ -22,6 +22,8 @@ Automates the process of scraping LinkedIn for job postings and sending personal
 
 - Gmail account for sending emails (App Password recommended) [How to Generate App Password in Google](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
 
+- OpenAI API Key [How to Generate Free API Key](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
+
 ## Installation
 
 1. Clone the Repository:
