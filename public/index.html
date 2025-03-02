@@ -79,6 +79,10 @@
     button:not(:disabled):hover {
       opacity: 0.8;
     }
+    .log-container {
+      position: relative;
+      margin-top: 20px;
+    }
 
     #log {
       border: 1px solid #ccc;
@@ -91,10 +95,26 @@
       box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.1);
     }
 
+    .clear-log-btn {
+      position: absolute;
+      top: 10px;
+      right: 2rem;
+      background-color: #dc3545;
+      color: white;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .clear-log-btn:hover {
+      background-color: #c82333;
+    }
+
     .log-message {
       padding: 5px 0;
     }
-
     .info { color: #007bff; }
     .success { color: #28a745; }
     .error { color: #dc3545; }
@@ -112,37 +132,42 @@
 
       <div class="button-wrapper">
         <div class="tooltip">Remove duplicate job entries</div>
-        <button id="deduplicate" disabled>🧹 Remove Duplicates</button>
+        <button id="deduplicate" >🧹 Remove Duplicates</button>
       </div>
 
       <div class="button-wrapper">
         <div class="tooltip">🔄 Remove duplicates by cross-checking with backup files to avoid emailing the same person twice</div>
-        <button id="deleteDuplicates" disabled>🗑️ Clean With Backups</button>
+        <button id="deleteDuplicates" >🗑️ Clean With Backups</button>
       </div>
 
       <div class="button-wrapper">
         <div class="tooltip">Extract company and HR contact details</div>
-        <button id="extractDetails" disabled>🤖 Extract Company & HR Details</button>
+        <button id="extractDetails" >🤖 Extract Company & HR Details</button>
       </div>
 
       <div class="button-wrapper">
         <div class="tooltip">Send emails to recruiters</div>
-        <button id="sendEmails" disabled>📩 Send Emails</button>
+        <button id="sendEmails" >📩 Send Emails</button>
       </div>
 
       <div class="button-wrapper">
         <div class="tooltip">Save extracted data for later use</div>
-        <button id="saveExtractedData" disabled>💾 Save Extracted Data</button>
+        <button id="saveExtractedData" >💾 Save Extracted Data</button>
       </div>
     </div>
 
     <h3>📊 Progress Log:</h3>
-    <div id="log"></div>
+    <div class="log-container">
+      <button class="clear-log-btn" id="clearLog">Clear Log</button>
+      <div id="log"></div>
+    </div>
   </div>
 
   <script>
     const socket = io();
     const logDiv = document.getElementById('log');
+    const clearLogButton = document.getElementById('clearLog');
+
     const startButton = document.getElementById('startScraping');
     const dedupButton = document.getElementById('deduplicate');
     const extractButton = document.getElementById('extractDetails');
@@ -157,6 +182,10 @@
       logDiv.appendChild(p);
       logDiv.scrollTop = logDiv.scrollHeight;
     };
+
+    clearLogButton.addEventListener('click', () => {
+      logDiv.innerHTML = '';
+    });
 
     socket.on('scrape-progress', (msg) => appendLog(`🔄 ${msg}`, 'info'));
     socket.on('scrape-complete', (msg) => {
