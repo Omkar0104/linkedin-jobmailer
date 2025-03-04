@@ -20,7 +20,7 @@ Automates the process of scraping LinkedIn for job postings and sending personal
 
 - npm
 
-- Gmail account for sending emails (App Password recommended) [How to Generate App Password in Google](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
+- Gmail account for sending emails (App Password recommended) [How to Generate App Password in Google](https://www.youtube.com/watch?v=MkLX85XU5rU)
 
 - OpenAI API Key [How to Generate Free API Key](https://www.youtube.com/watch?v=YP8mV_2RDLc&t=21s)
 
