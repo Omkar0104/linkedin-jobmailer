@@ -209,13 +209,13 @@
     socket.on('deletion_error', (msg) => appendLog(`❗ ${msg}`, 'error'));
     socket.on('deletion_progress', (msg) => appendLog(`🗑️ ${msg}`, 'info'));
 
-    // startButton.addEventListener('click', () => {
+    startButton.addEventListener('click', () => {
       appendLog('🚀 AI Agent activated: Starting the scraper... 🤖', 'info');
       fetch('/scrape', { method: 'POST' })
         .then(res => res.text())
         .then(data => appendLog(`ℹ️ ${data}`, 'success'))
         .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
-    // });
+    });
 
     dedupButton.addEventListener('click', () => {
       appendLog('🧹 Cleaning up duplicate entries...', 'warning');
