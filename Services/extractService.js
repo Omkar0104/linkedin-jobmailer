@@ -1,6 +1,6 @@
-const fs = require('fs');
-const { OpenAI } = require('openai');
-require('dotenv').config();
+const fs = require("fs");
+const { OpenAI } = require("openai");
+require("dotenv").config();
 
 const openai = new OpenAI({
   baseURL: "https://models.inference.ai.azure.com",
@@ -8,11 +8,10 @@ const openai = new OpenAI({
 });
 
 function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const extractInfo = async (job) => {
-
   const { content, email } = job;
 
   const prompt = `Extract the recruiter name and company name from the following job post content: 
@@ -42,66 +41,113 @@ Rules:
     let result = response.choices[0].message.content.trim();
     result = result.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    return { ...JSON.parse(result), email: job.email };
+    return { ...JSON.parse(result), email };
   } catch (error) {
-    if (error?.error?.code === 'RateLimitReached') {
-      const waitTime = parseInt(error.error.message.match(/wait (\d+) seconds/)[1]) * 1000;
-      throw { type: 'rate_limit', waitTime };
+    if (error?.error?.code === "RateLimitReached") {
+      const waitTime = parseInt(error.error.message.match(/wait (\d+) seconds/)?.[1]) * 1000 || 15 * 60 * 1000;
+      throw { type: "rate_limit", waitTime };
     }
 
     console.error("Error extracting info:", error);
-    return { recruiter: "HR Team", company: job.company, email: job.email };
+    return { recruiter: "HR Team", company: null, email };
   }
+};
+
+const readJsonFile = (filePath) => {
+  try {
+    return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, "utf8")) : [];
+  } catch (error) {
+    console.error(`Error reading ${filePath}:`, error);
+    return [];
+  }
+};
+
+const writeJsonFile = (filePath, data) => {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  } catch (error) {
+    console.error(`Error writing to ${filePath}:`, error);
+  }
+};
+
+const processJobs = async (io, jobs) => {
+  let extractedData = [];
+  let unprocessedJobs = [];
+
+  for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
+
+    try {
+      const extractedInfo = await extractInfo(job);
+      extractedData.push({
+        recruiter: extractedInfo.recruiter || "HR Team",
+        company: extractedInfo.company !== undefined ? extractedInfo.company : null,
+        email: extractedInfo.email || "Not provided",
+      });
+
+      io.emit(
+        "extract-progress",
+        `✅ Processed ${i + 1}/${jobs.length}: ${extractedInfo.recruiter || "HR Team"} at ${extractedInfo.company || "Unknown Company"}`
+      );
+    } catch (err) {
+      if (err.type === "rate_limit") {
+        const waitInMinutes = Math.ceil(err.waitTime / 60000);
+        io.emit(
+          "extract-progress",
+          `⏳ GPT rate limit reached. Pausing for ${waitInMinutes} minutes before retrying...`
+        );
+
+        unprocessedJobs = jobs.slice(i);
+        break;
+      } else {
+        io.emit("extract-progress", `⚠️ Skipping job due to an error: ${err.message}`);
+      }
+    }
+  }
+
+  return { extractedData, unprocessedJobs };
 };
 
 const extractService = async (io) => {
-  let extractedData = [];
-
   try {
+    let jsonData = readJsonFile("./data/linkedin_hiring_posts.json");
+    let unprocessedData = readJsonFile("./data/not_processed_data.json");
 
-    const jsonData = JSON.parse(fs.readFileSync('./data/linkedin_hiring_posts.json', 'utf8'));
-    console.log(jsonData.length);
-    io.emit('extract-progress', `📤 AI Agent activated: Extracting details from ${jsonData.length} job posts... 🔍`);
+    if (!jsonData.length && !unprocessedData.length) {
+      io.emit("extract-progress", "⚠️ No job posts found to process.");
+      return;
+    }
 
-    for (let i = 0; i < jsonData.length; i++) {
-      const job = jsonData[i];
+    io.emit("extract-progress", `📤 AI Agent activated: Extracting details from ${jsonData.length} job posts... 🔍`);
 
-      try {
-        const extractedInfo = await extractInfo(job);
-        extractedData.push({
-          recruiter: extractedInfo.recruiter || "HR Team",
-          company: extractedInfo.company !== undefined ? extractedInfo.company : null,
-          email: extractedInfo.email || "Not provided",
-        });
+    let { extractedData, unprocessedJobs } = await processJobs(io, jsonData);
 
-        io.emit('extract-progress', `✅ Processed ${i + 1}/${jsonData.length}: ${extractedInfo.recruiter || "HR Team"} at ${extractedInfo.company || "Unknown Company"}`);
-      } catch (err) {
+    // If rate limit was hit, save unprocessed jobs
+    if (unprocessedJobs.length > 0) {
+      writeJsonFile("./data/not_processed_data.json", unprocessedJobs);
+      io.emit("extract-progress", `⚠️ ${unprocessedJobs.length} job posts saved for later processing.`);
+    }
 
-        if (err.type == 'rate_limit') {
-          const waitInMinutes = Math.ceil(err.waitTime / 60000);
-        
-          io.emit('extract-progress', `⏳ GPT rate limit reached. Pausing for ${waitInMinutes} minutes before retrying...`);
+    // Retry any previously unprocessed jobs
+    if (unprocessedData.length > 0) {
+      io.emit("extract-progress", `🔄 Retrying ${unprocessedData.length} previously unprocessed job posts...`);
 
-break;
+      let retryResult = await processJobs(io, unprocessedData);
+      extractedData = extractedData.concat(retryResult.extractedData);
+      writeJsonFile("./data/not_processed_data.json", retryResult.unprocessedJobs);
 
-        } else {
-          io.emit('extract-progress', `⚠️ Skipping job due to an error: ${err.message}`);
-        }
+      if (retryResult.unprocessedJobs.length === 0) {
+        fs.unlinkSync("./data/not_processed_data.json"); // Delete the file if all jobs are processed
       }
     }
 
-    fs.writeFileSync('./data/linkedin_hiring_posts.json', JSON.stringify(extractedData, null, 2), 'utf8');
-    io.emit('extract-complete', '🎉 Extraction completed! Data saved to linkedin_hiring_posts.json. You can now review and update it as needed.');
-
+    // Save final extracted data
+    writeJsonFile("./data/linkedin_hiring_posts.json", extractedData);
+    io.emit("extract-complete", "🎉 Extraction completed! Data saved to linkedin_hiring_posts.json.");
   } catch (error) {
     console.error("Extraction error:", error);
-    io.emit('extract-error', `❗ Extraction failed: ${error.message}`);
-
-    // Save partial data even on error
-    fs.writeFileSync('./data/linkedin_hiring_posts.json', JSON.stringify(extractedData, null, 2), 'utf8');
-    io.emit('extract-complete', '⚠️ Partial data saved due to an error.');
+    io.emit("extract-error", `❗ Extraction failed: ${error.message}`);
   }
 };
-
 
 module.exports = { extractService };
