@@ -2,14 +2,16 @@
 
 const express = require('express');
 // const mongoose = require('mongoose');
+// const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
 const bodyParser = require('body-parser');
-const scraperService = require('./services/scraperService');
-const dedupService = require('./services/dedupService');
-const { deleteDuplicates } = require('./services/deleteDuplicates');
-const { extractService } = require('./services/extractService');
-const emailService = require('./services/emailService');
+const { safeRequire } = require('./Services/checkModule');
+const scraperService = safeRequire('./scraperService');
+const dedupService = safeRequire('./dedupService');
+const { deleteDuplicates } = safeRequire('./deleteDuplicates') || {};
+const { extractService } = safeRequire('./extractService') || {};
+const emailService = safeRequire('./emailService');
 const fs = require('fs');
 require('dotenv').config();
 
