@@ -63,7 +63,7 @@ Add your resume as resume.pdf in the root directory.
 
 Run the Project:
 ```bash
-node index.js or npm start
+npm start
 ```
 
 ## Usage
