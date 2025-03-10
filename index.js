@@ -3,6 +3,23 @@
 const express = require('express');
 // const mongoose = require('mongoose');
 // const path = require('path');
+
+const os = require('os');
+
+const getLocalIP = () => {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const net of interfaces[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'Local IP not found';
+};
+
+console.log('Local IP Address:', getLocalIP());
+
 const http = require('http');
 const socketIo = require('socket.io');
 const bodyParser = require('body-parser');
