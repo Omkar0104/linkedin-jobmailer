@@ -5,123 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LinkedIn JobMailer 🚀</title>
   <script src="/socket.io/socket.io.js"></script>
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f7fc;
-      text-align: center;
-      padding: 20px;
-    }
-
-    h1 {
-      color: #333;
-    }
-
-    .container {
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .button-group {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .button-wrapper {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .tooltip {
-      visibility: hidden;
-      background-color: #333;
-      color: #fff;
-      text-align: center;
-      padding: 5px 10px;
-      border-radius: 5px;
-      position: absolute;
-      top: -35px;
-      font-size: 12px;
-      white-space: nowrap;
-      z-index: 1;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .button-wrapper:hover .tooltip {
-      visibility: visible;
-      opacity: 1;
-    }
-
-    button {
-      padding: 8px 12px;
-      font-size: 14px;
-      font-weight: bold;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-
-    button:not(:disabled):hover {
-      opacity: 0.8;
-    }
-    .log-container {
-      position: relative;
-      margin-top: 20px;
-    }
-
-    #log {
-      border: 1px solid #ccc;
-      background: #fff;
-      padding: 15px;
-      height: 300px;
-      overflow-y: auto;
-      border-radius: 5px;
-      text-align: left;
-      box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    .clear-log-btn {
-      position: absolute;
-      top: 10px;
-      right: 2rem;
-      background-color: #dc3545;
-      color: white;
-      font-size: 12px;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      border: none;
-    }
-
-    .clear-log-btn:hover {
-      background-color: #c82333;
-    }
-
-    .log-message {
-      padding: 5px 0;
-    }
-    .info { color: #007bff; }
-    .success { color: #28a745; }
-    .error { color: #dc3545; }
-    .warning { color: #ffc107; }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="top-bar">
+    <button class="track-emails" onclick="location.href='followup.html'">📊 Track Emails</button>
+    <label class="switch">
+      <input type="checkbox" id="toggleMode">
+      <span class="slider round"></span>
+    </label>
+  </div>
+
   <h1>📩 LinkedIn JobMailer</h1>
   <div class="container">
     <div class="button-group">
@@ -132,12 +26,12 @@
 
       <div class="button-wrapper">
         <div class="tooltip">Remove duplicate job entries</div>
-        <button id="deduplicate" >🧹 Remove Duplicates</button>
+        <button id="deduplicate">🧹 Remove Duplicates</button>
       </div>
 
       <div class="button-wrapper">
         <div class="tooltip">🔄 Remove duplicates by cross-checking with backup files to avoid emailing the same person twice</div>
-        <button id="deleteDuplicates" >🗑️ Clean With Backups</button>
+        <button id="deleteDuplicates">🗑️ Clean With Backups</button>
       </div>
 
       <div class="button-wrapper">
@@ -147,13 +41,19 @@
 
       <div class="button-wrapper">
         <div class="tooltip">Send emails to recruiters</div>
-        <button id="sendEmails" >📩 Send Emails</button>
+        <button id="sendEmails">📩 Send Emails</button>
       </div>
 
-      <div class="button-wrapper">
+      <!-- <div class="button-wrapper">
         <div class="tooltip">Save extracted data for later use</div>
         <button id="saveExtractedData" >💾 Save Extracted Data</button>
-      </div>
+      </div> -->
+
+      <!-- <div class="button-wrapper">
+        <div class="tooltip">Send follow-up emails to recruiters</div>
+        <button onclick="location.href='followup.html'">🔁 Follow-Up Emails</button>
+      </div> -->
+      
     </div>
 
     <h3>📊 Progress Log:</h3>
@@ -172,8 +72,18 @@
     const dedupButton = document.getElementById('deduplicate');
     const extractButton = document.getElementById('extractDetails');
     const sendButton = document.getElementById('sendEmails');
-    const saveExtractedButton = document.getElementById('saveExtractedData');
+    // const saveExtractedButton = document.getElementById('saveExtractedData');
     const deleteDuplicatesButton = document.getElementById('deleteDuplicates');
+    // document.body.classList.toggle('dark-mode');
+
+    document.body.classList.toggle('dark-mode');
+    document.getElementById("toggleMode").checked = true;
+    const toggleModeButton = document.getElementById('toggleMode');
+    toggleModeButton.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      toggleModeButton.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+    });
+
 
     const appendLog = (message, type = 'info') => {
       const p = document.createElement('p');
@@ -187,7 +97,7 @@
       logDiv.innerHTML = '';
     });
 
-    socket.on('scrape-progress', (msg) => appendLog(`🔄 ${msg}`, 'info'));
+    socket.on('scrape-progress', (msg) => appendLog(`${msg}`, 'info'));
     socket.on('scrape-complete', (msg) => {
       appendLog(`✅ ${msg}`, 'success');
       dedupButton.disabled = false;
@@ -198,7 +108,7 @@
     socket.on('extract-progress', (msg) => appendLog(`${msg}`, 'info'));
     socket.on('extract-complete', (msg) => {
       appendLog(`✅ ${msg}`, 'success');
-      saveExtractedButton.disabled = false;
+      // saveExtractedButton.disabled = false;
     
     });
     socket.on('extract-error', (msg) => appendLog(`❗ ${msg}`, 'error'));
@@ -233,9 +143,9 @@
       fetch('/extract', { method: 'POST' })
         .then(res => res.text())
         .then(data => {
-          appendLog(`✅ ${data}`, 'success');
+          appendLog(`${data}`, 'success');
           sendButton.disabled = false;
-          saveExtractedButton.disabled = false;
+          // saveExtractedButton.disabled = false;
         })
         .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
     });
@@ -248,19 +158,19 @@
         .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
     });
 
-    saveExtractedButton.addEventListener('click', () => {
-      appendLog('💾 Saving extracted data for future use...', 'info');
-      fetch('/save-extracted-data', { method: 'POST' })
-        .then(res => res.text())
-        .then(data => appendLog(`${data}`, 'success'))
-        .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
-    });
+    // saveExtractedButton.addEventListener('click', () => {
+    //   appendLog('💾 Saving extracted data for future use...', 'info');
+    //   fetch('/save-extracted-data', { method: 'POST' })
+    //     .then(res => res.text())
+    //     .then(data => appendLog(`${data}`, 'success'))
+    //     .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
+    // });
 
     deleteDuplicatesButton.addEventListener('click', () => {
       appendLog('🗑️ Deleting duplicate records...', 'warning');
       fetch('/delete-duplicates', { method: 'POST' })
         .then(res => res.text())
-        .then(data => appendLog(`✅ ${data}`, 'success'))
+        .then(data => appendLog(`${data}`, 'success'))
         .catch(err => appendLog(`❗ Error: ${err.message}`, 'error'));
     });
   </script>

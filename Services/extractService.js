@@ -14,7 +14,8 @@ function delay(ms) {
 const extractInfo = async (job) => {
   const { content, email } = job;
 
-  const prompt = `Extract the recruiter name and company name from the following job post content: 
+  const prompt = `Extract the recruiter name and company name from the following job post content:
+  
 
 "${content}"
 
@@ -28,7 +29,7 @@ Rules:
 - If the recruiter’s name is missing, set "recruiter": "HR Team".
 - If the company name is missing in the job post content, derive it from the provided email: "${email}"  
   - If the email follows the format "name@companydomain.com", extract the company name from the domain.  
-  - Example: If email is "simarpreet.kaur@thewitslab.com", set "company": "The Wits Lab".  
+  - Example: If email is "simarpreet.kaur@thewitslab.com", set "company": "The Wits Lab".   
   - If "${email}" is a generic email (e.g., "omkar@gmail.com"), set "company": null.`;
 
   try {

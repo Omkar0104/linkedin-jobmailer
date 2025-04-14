@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Tracker</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="followup.css">
+</head>
+<body>
+
+    <div id="loader" class="loader"></div>
+
+    <!-- <button class="toggle-mode" id="toggleMode">☀️ Light Mode</button> -->
+    <div class="top-bar">
+        <button class="track-emails" onclick="location.href='index.html'">Send Emails</button>
+        <label class="switch">
+          <input type="checkbox" id="toggleMode">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+    <h1>Email Tracker</h1>
+    <div style="text-align: left; margin-bottom: 10px; display: flex; gap: 2rem;">
+        <button class="btn" onclick="sendBulkFollowUp()">Send Bulk Follow-ups</button>
+        
+        <label style="align-self: center;">
+            <input type="checkbox" id="filterOpened" onchange="applyFilters()"> Show Only Opened
+        </label>
+        
+        <label style="align-self: center;">
+            <input type="checkbox" id="filterFollowUp" onchange="applyFilters()"> Show Follow-up Sent
+        </label>
+
+        <input type="text" id="searchCompany" placeholder="Search by Company" oninput="applyFilters()" style="margin-right: 10px; padding: 5px;">
+    </div>
+    
+    
+    <table>
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"> Select All</th>
+                <th>Email</th>
+                <th>Company</th>
+                <th>Email Sent On</th>
+                <th>Email Opened?</th> <!-- New Column -->
+                <th>Follow-up Sent?</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="recruiterTable">
+            <!-- Data will be inserted here -->
+        </tbody>
+    </table>
+    <p id="noDataMessage" style="text-align: center; display: none;">No data found! Try again later.</p>
+
+    <script>
+
+const toggleModeButton = document.getElementById('toggleMode');
+const loader = document.getElementById("loader");
+document.body.classList.toggle('dark-mode');
+document.getElementById("toggleMode").checked = true;
+
+toggleModeButton.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            toggleModeButton.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+        });
+
+let trackingData = [];
+
+function formatTimestamp(timestamp) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(timestamp));
+}
+
+
+async function fetchTrackingData() {
+    try {
+        const response = await fetch("/get-email-tracking");
+        const trackingData = await response.json();
+    } catch (error) {
+        console.error("Error fetching tracking data:", error);
+    }
+}
+
+
+async function fetchEmailOpenStatus() {
+            try {
+                const response = await fetch("/get-email-tracking");
+                const trackingData = await response.json();
+                return trackingData.reduce((acc, entry) => {
+                    acc[entry.email] = true; // Store opened status as true
+                    return acc;
+                }, {});
+            } catch (error) {
+                console.error("Error fetching email open tracking data:", error);
+                return {};
+            }
+        }
+
+
+        let recruitersData = []; // Store fetched recruiters globally
+
+async function fetchRecruiters() {
+    loader.style.display = "block";
+    try {
+        await fetchTrackingData();
+        const openStatus = await fetchEmailOpenStatus();
+        const response = await fetch("/recruiters");
+        recruitersData = await response.json(); // Store data for filtering
+        
+        updateTable(recruitersData); // Initial rendering
+    } catch (error) {
+        console.error("Error fetching recruiters:", error);
+    } finally {
+        loader.style.display = "none";
+    }
+}
+
+function updateTable(data) {
+    const tableBody = document.getElementById("recruiterTable");
+    const noDataMessage = document.getElementById("noDataMessage");
+    
+    tableBody.innerHTML = "";
+    
+    if (data.length === 0) {
+        noDataMessage.style.display = "block";
+        return;
+    } else {
+        noDataMessage.style.display = "none";
+    }
+
+    data.forEach((recruiter) => {
+        if (!recruiter.emailLogs || recruiter.emailLogs.length === 0) return;
+
+        const lastEmail = recruiter.emailLogs[recruiter.emailLogs.length - 1];
+        const followUpSent = recruiter.emailLogs.length > 1 ? "Yes" : "No";
+        const trackingEntry = trackingData.find(entry => entry.email === recruiter.email);
+        const openedAt = trackingEntry ? formatTimestamp(trackingEntry.openedAt) : "❌ Not Opened";
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><input type="checkbox" class="bulk-checkbox" data-message-id="${lastEmail.messageId}" data-email="${recruiter.email}" data-subject="${lastEmail.subject}"></td>
+            <td>${recruiter.email}</td>
+            <td>${recruiter.company}</td>
+            <td>${formatTimestamp(lastEmail.timestamp)}</td>
+            <td>${openedAt}</td>
+            <td>${followUpSent}</td>
+            <td>
+                <button class="btn" onclick="sendFollowUp('${lastEmail.messageId}', '${recruiter.email}', '${lastEmail.subject}')">
+                    Send Follow-up
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function applyFilters() {
+    let filteredData = [...recruitersData]; // Work on a copy
+
+    const filterOpened = document.getElementById("filterOpened").checked;
+    const filterFollowUp = document.getElementById("filterFollowUp").checked;
+    const searchValue = document.getElementById("searchCompany").value.toLowerCase().trim();
+
+    if (filterOpened) {
+        filteredData = filteredData.filter(recruiter =>
+            trackingData.some(entry => entry.email === recruiter.email)
+        );
+    }
+
+    if (filterFollowUp) {
+        filteredData = filteredData.filter(recruiter => recruiter.emailLogs.length > 1);
+    }
+
+    if (searchValue) {
+        filteredData = filteredData.filter(recruiter => 
+            recruiter.company?.toLowerCase().includes(searchValue)
+        );
+    }
+
+    updateTable(filteredData); // Update the table with filtered data
+}
+
+function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll(".bulk-checkbox");
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = source.checked;
+            });
+        }
+
+async function sendFollowUp(messageId, email, subject) {
+            if (!messageId) {
+                alert("❌ Cannot send follow-up, message ID missing.");
+                return;
+            }
+
+            try {
+                const response = await fetch("/send-follow-up", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ messageId, email, subject }),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert("✅ Follow-up email sent successfully!");
+                } else {
+                    alert(`❌ Failed to send follow-up: ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error sending follow-up:", error);
+                alert("❌ Error sending follow-up email.");
+            }
+        }
+
+async function sendBulkFollowUp() {
+            const selectedCheckBoxes = document.querySelectorAll(".bulk-checkbox:checked");
+            if (selectedCheckBoxes.length === 0) {
+                alert("⚠️ Please select at least one recruiter to send follow-up emails.");
+                return;
+            }
+
+            const recruiters = Array.from(selectedCheckBoxes).map((checkbox) => ({
+                messageId: checkbox.getAttribute("data-message-id"),
+                email: checkbox.getAttribute("data-email"),
+                subject: checkbox.getAttribute("data-subject"),
+            }));
+
+            try {
+                const response = await fetch("/send-bulk-follow-up", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ recruiters }),
+                });
+
+                const result = await response.json();
+
+                console.log(result);
+                
+                if (response.ok) {
+                    let successCount = result.results.filter(r => r.success).length;
+                    let failureCount = result.results.length - successCount;
+
+                    alert(`✅ Bulk follow-ups sent! ✅\n\n📩 Successful: ${successCount}\n❌ Failed: ${failureCount}`);
+
+                    if (failureCount > 0) {
+                        console.error("❌ Some emails failed:", result.results.filter(r => !r.success));
+                    }
+                } else {
+                    alert(`❌ Failed to send bulk follow-ups: ${result.error}`);
+                }
+            } catch (error) {
+                console.error("❌ Error sending bulk follow-ups:", error);
+                alert("❌ Error sending bulk follow-up emails.");
+            }
+        }
+
+window.onload = fetchRecruiters;
+    </script>
+
+</body>
+</html>

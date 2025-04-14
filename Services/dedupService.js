@@ -16,6 +16,6 @@ const deduplicateJobs = (data) => {
 
   return { uniqueData, duplicatesCount };
 
-  };
+};
   
-  module.exports = { deduplicateJobs };
+module.exports = { deduplicateJobs };

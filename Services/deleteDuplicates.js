@@ -2,8 +2,9 @@ const fs = require('fs');
 const path = require('path');
 
 const deleteDuplicates = async (req, res, io) => {
-  const directoryPath = path.resolve(__dirname, '../data'); // Set directory to parent
+  const directoryPath = path.resolve(__dirname, '../data'); // Data directory
   const sourceFile = `${directoryPath}/linkedin_hiring_posts.json`;
+  const persistentFile = `${directoryPath}/extracted_data.json`; // Single storage file
 
   try {
     if (!fs.existsSync(sourceFile)) {
@@ -13,32 +14,33 @@ const deleteDuplicates = async (req, res, io) => {
       return res.status(404).send(errorMsg);
     }
 
-    // io.emit('deletion_started', { message: 'Duplicate deletion process started.' });
-
     // Load current extracted data
     const currentData = JSON.parse(fs.readFileSync(sourceFile, 'utf-8'));
 
-    // Collect data from all backup files
-    const backupFiles = fs.readdirSync(directoryPath).filter(file => file.startsWith('extracted_data_') && file.endsWith('.json'));
+    // Load existing persistent extracted data
     let backupData = [];
+    if (fs.existsSync(persistentFile)) {
+      backupData = JSON.parse(fs.readFileSync(persistentFile, 'utf-8'));
+    }
 
-    backupFiles.forEach((file, index) => {
-      const data = JSON.parse(fs.readFileSync(path.join(directoryPath, file), 'utf-8'));
-      backupData = backupData.concat(data);
+    // Create a set of emails from backupData where status is "Sent"
+    const sentEmails = new Set(
+      backupData
+        .filter(item => item.emailLogs) // Ensure emailLogs exist
+        .flatMap(item =>
+          item.emailLogs
+            .filter(log => log.status === "Sent")
+            .map(log => item.email) // Collect emails with "Sent" status
+        )
+    );
 
-      io.emit('deletion_progress', `Processed backup file ${index + 1} of ${backupFiles.length}: ${file}`);
-    });
-
-    // Create a set of unique identifiers from backup data (e.g., email)
-    const backupEmails = new Set(backupData.map(item => item.email));
-
-    // Filter out duplicates from current data
-    const cleanedData = currentData.filter(item => !backupEmails.has(item.email));
+    // Filter out elements from currentData that have matching emails in sentEmails
+    const cleanedData = currentData.filter(item => !sentEmails.has(item.email));
 
     // Save cleaned data back to sourceFile
-    fs.writeFileSync(sourceFile, JSON.stringify(cleanedData, null, 2));
+    fs.writeFileSync(sourceFile, JSON.stringify(cleanedData, null, 2), 'utf-8');
 
-    res.status(200).send(`Duplicates removed ${currentData.length - cleanedData.length} from linkedin_hiring_posts.json.`);
+    res.status(200).send(`✅ Removed ${currentData.length - cleanedData.length} duplicates from linkedin_hiring_posts.json.`);
   } catch (error) {
     console.error('Error during duplicate deletion:', error);
     io.emit('deletion_error', 'An error occurred during deletion');
