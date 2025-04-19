@@ -1,10 +1,7 @@
 {
-"scripts": {
-  "start": "node index.js",
-  "postinstall": "PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install --with-deps"
-}
-
-,
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "axios": "^1.7.9",
     "body-parser": "^1.20.3",
