@@ -1,12 +1,12 @@
 const fs = require("fs");
 const { chromium } = require("playwright");
 require("dotenv").config();
-
+    
 const scrape = async (io) => {
   const emit = (msg) => io.emit("scrape-progress", msg);
   const storagePath = './auth.json';
   let context, page;
-  const browser = await chromium.launch({ headless: true, slowMo: 50 });
+  const browser = await chromium.launch({ headless: false, slowMo: 50 });
 
   try {
     // Load session if exists
@@ -75,7 +75,7 @@ const scrape = async (io) => {
     for (let i = 0; i < scrollLimit; i++) {
       emit(`🔄 Scrolling (${i + 1}/${scrollLimit})...`);
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.waitForTimeout(3000 + Math.floor(Math.random() * 2000));
+      await page.waitForTimeout(3000 + Math.floor(Math.random() * 2000)); 
       const newHeight = await page.evaluate(() => document.body.scrollHeight);
       if (newHeight === prevHeight) {
         emit("📉 No more new posts loaded.");

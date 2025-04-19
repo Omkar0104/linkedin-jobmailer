@@ -84,7 +84,7 @@ function formatTimestamp(timestamp) {
 async function fetchTrackingData() {
     try {
         const response = await fetch("/get-email-tracking");
-        const trackingData = await response.json();
+         trackingData = await response.json();
     } catch (error) {
         console.error("Error fetching tracking data:", error);
     }
@@ -106,12 +106,12 @@ async function fetchEmailOpenStatus() {
         }
 
 
-        let recruitersData = []; // Store fetched recruiters globally
+let recruitersData = []; // Store fetched recruiters globally
 
 async function fetchRecruiters() {
     loader.style.display = "block";
+    await fetchTrackingData();
     try {
-        await fetchTrackingData();
         const openStatus = await fetchEmailOpenStatus();
         const response = await fetch("/recruiters");
         recruitersData = await response.json(); // Store data for filtering
@@ -136,6 +136,7 @@ function updateTable(data) {
     } else {
         noDataMessage.style.display = "none";
     }
+
 
     data.forEach((recruiter) => {
         if (!recruiter.emailLogs || recruiter.emailLogs.length === 0) return;
@@ -247,7 +248,6 @@ async function sendBulkFollowUp() {
 
                 const result = await response.json();
 
-                console.log(result);
                 
                 if (response.ok) {
                     let successCount = result.results.filter(r => r.success).length;
