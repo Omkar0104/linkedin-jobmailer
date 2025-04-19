@@ -1,9 +1,9 @@
 {
 "scripts": {
   "start": "node index.js",
-  "postinstall": "npx playwright install chromium"
-
+  "postinstall": "PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install --with-deps"
 }
+
 ,
   "dependencies": {
     "axios": "^1.7.9",
