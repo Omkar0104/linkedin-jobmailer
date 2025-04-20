@@ -11,62 +11,64 @@ const scrape = async (io) => {
     slowMo: 50,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   });
+
+  let triedManualLogin = false;
+
   
   try {
-    // Load session if exists
+    const createContext = async (useSavedStorage = true) => {
+      return await browser.newContext({
+        ...(useSavedStorage && fs.existsSync(storagePath) ? { storageState: storagePath } : {}),
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36",
+        viewport: { width: 1366, height: 768 },
+        locale: "en-US"
+      });
+    };
+  
+    context = await createContext();
+    page = await context.newPage();
+  
     if (fs.existsSync(storagePath)) {
       emit("🔐 Using saved login session...");
-      context = await browser.newContext({
-        storageState: storagePath,
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36",
-        viewport: { width: 1366, height: 768 },
-        locale: "en-US"
-      });
-    } else {
-      emit("🔐 No saved session. Logging in manually...");
-      context = await browser.newContext({
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36",
-        viewport: { width: 1366, height: 768 },
-        locale: "en-US"
-      });
+      await page.goto("https://www.linkedin.com/feed", { waitUntil: "domcontentloaded", timeout: 60000 });
+  
+      const url = page.url();
+      if (url.includes("/checkpoint/challenge") || url.includes("/login")) {
+        emit("⚠️ Saved session is invalid. Deleting and retrying login...");
+        fs.unlinkSync(storagePath);
+        await context.close();
+  
+        // Retry with manual login
+        context = await createContext(false);
+        page = await context.newPage();
+        triedManualLogin = true;
+      }
     }
-
-    page = await context.newPage();
-
-    if (!fs.existsSync(storagePath)) {
+  
+    // Manual login if storage not exists or after invalid session
+    if (!fs.existsSync(storagePath) || triedManualLogin) {
+      emit("🔐 Logging in manually...");
       await page.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded", timeout: 60000 });
       await page.type("#username", process.env.LINKEDIN_EMAIL);
       await page.type("#password", process.env.LINKEDIN_PASSWORD);
-
-      
-    await page.evaluate(() => {
-      const checkbox = document.querySelector('input[name="rememberMeOptIn"]');
-      if (checkbox && checkbox.checked) checkbox.click();
-    });
-
+  
       await Promise.all([
         page.$eval("form.login__form", (form) => form.submit()),
         page.waitForNavigation({ waitUntil: "networkidle", timeout: 60000 }),
       ]);
-
-      // Save session
+  
+      const loginUrl = page.url();
+      if (loginUrl.includes("/checkpoint/challenge")) {
+        throw new Error("⚠️ Challenge page triggered. Manual login required.");
+      }
+      if (!loginUrl.includes("/feed")) {
+        throw new Error("❌ Login failed. Not redirected to feed.");
+      }
+  
+      emit("✅ Login successful. Saving session...");
       await context.storageState({ path: storagePath });
-    } else {
-      await page.goto("https://www.linkedin.com/feed", { waitUntil: "domcontentloaded", timeout: 60000 });
     }
-
-    await page.waitForTimeout(1000);
-
-    const currentUrl = page.url();
-    if (currentUrl.includes("/checkpoint/challenge")) {
-      throw new Error("⚠️ Challenge page triggered. Manual login may be required.");
-    }
-    if (!currentUrl.includes("/feed")) {
-      throw new Error("❌ Login failed. Not redirected to feed.");
-    }
-
-    emit("✅ Login successful. Navigating to search page...");
-
+  
     const keyword = encodeURIComponent(process.env[`SEARCH_KEYWORD`] || "hiring");
     await page.goto(`https://www.linkedin.com/search/results/content/?keywords=${keyword}`, {
       waitUntil: "domcontentloaded",
