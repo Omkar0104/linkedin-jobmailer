@@ -6,8 +6,12 @@ const scrape = async (io) => {
   const emit = (msg) => io.emit("scrape-progress", msg);
   const storagePath = './auth.json';
   let context, page;
-  const browser = await chromium.launch({ headless: false, slowMo: 50 });
-
+  const browser = await chromium.launch({
+    headless: true,
+    slowMo: 50,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+  });
+  
   try {
     // Load session if exists
     if (fs.existsSync(storagePath)) {
