@@ -7,7 +7,7 @@ const scrape = async (io) => {
   const storagePath = './auth.json';
   let context, page;
   const browser = await chromium.launch({
-    headless: true,
+    headless: false,
     slowMo: 50,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   });
