@@ -8,3 +8,4 @@ test3.js
 data/
 .gitignore
 package-lock.json
+test-script.js
